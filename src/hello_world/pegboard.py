@@ -1,8 +1,20 @@
+from typing import cast
 import build123d as bd
 import hello_world.util.skadis_hook as skadis
 
-def skadis_bin(bin_width: int, bin_height_back: int,
-               bin_height_front: int, bin_depth: int, bin_wall_thickness: int) -> bd.Shape:
+
+def skadis_bin(
+    bin_width: int, bin_height_back: int, bin_height_front: int, bin_depth: int, bin_wall_thickness: int
+) -> bd.Shape:
+    """
+    Generates a bin for the Skadis pegboard system.
+    :param bin_width: The width of the bin.
+    :param bin_height_back: The height of the back of the bin.
+    :param bin_height_front: The height of the front of the bin. The front can be made to be lower than the back to make it easier to see the contents.
+    :param bin_depth: The depth of the bin.
+    :param bin_wall_thickness: The thickness of the bin walls.
+    :return: The bin.
+    """
     # Create the bin using a profile.
     bd.Sketch(None)
     path = bd.Curve(
@@ -22,7 +34,9 @@ def skadis_bin(bin_width: int, bin_height_back: int,
     )
     # Make some hooks
     hook_face = bin.faces().sort_by(bd.Axis.Y).last
-    hooks = skadis.make_hooks(hook_face, 6, skip=2)
+    hook_plane = bd.Plane(hook_face)
+    hook = bd.Rot(Y=90) * bd.Rot(Z=90) * skadis.skadis_hook()
+    hook_locs = cast(skadis.SkadisLocations, hook_plane * skadis.SkadisLocations(2, 2, spacing=80))
+    hooks = bd.Compound([loc * hook for loc in hook_locs])
     bin = bd.Compound.make_compound((bin, hooks))
     return bin
-
