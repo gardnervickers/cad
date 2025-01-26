@@ -16,10 +16,10 @@ def low_voltage_xformer():
     box = box.fillet(wall_thickness, box.edges().filter_by(bd.Axis.Z))
 
     lid_plane = bd.Plane(box_topf).offset(wall_thickness)
-    lid_sk: bd.Rectangle = lid_plane * bd.Rectangle(width, height)
+    lid_sk = bd.Sketch(lid_plane * bd.Rectangle(width, height))
     lid = bd.extrude(lid_sk, wall_thickness, dir=(0, 0, -1))
     # Add a lip to the lid, where the lip is the inner profile of the box. 
-    lid_lip_sk = lid_plane.offset(-wall_thickness) * bd.Rectangle(width - tolerance - 2 * wall_thickness, height - tolerance - 2 * wall_thickness)
+    lid_lip_sk = bd.Sketch(lid_plane.offset(-wall_thickness) * bd.Rectangle(width - tolerance - 2 * wall_thickness, height - tolerance - 2 * wall_thickness))
     lid_lip = bd.extrude(lid_lip_sk, wall_thickness, dir=(0, 0, -1))
     lid += lid_lip
     lid = lid.fillet(wall_thickness, lid.edges().filter_by(bd.Axis.Z))
@@ -37,9 +37,9 @@ def low_voltage_xformer():
     # Lastly, we will slot in some holes for wires on the other side of the box.
     hole_face = lid.faces().sort_by(bd.Axis.X).last
     hole_plane = bd.Plane(hole_face)
-    hole = hole_plane * bd.Pos((0, -9.5, 0))* bd.Rectangle(30, 15)
+    hole = bd.Sketch(hole_plane * bd.Pos((0, -9.5, 0))* bd.Rectangle(30, 15))
     hole = bd.extrude(hole, wall_thickness * 4, dir=(-1, 0, 0))
     box -= hole
     lid -= hole
-
     return [box, lid]
+
