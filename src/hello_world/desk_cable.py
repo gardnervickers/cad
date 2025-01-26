@@ -70,15 +70,6 @@ class CableOrganizer:
         face = bd.Face(None) + hexagons 
         return bd.extrude(face, amount=self.grid_thickness, dir=(0, 0, 1))
 
-    def create_grid2(self, rows: int, columns: int) -> bd.Solid:
-        hexmount = self.hex_mount()
-        hexmount = bd.extrude(hexmount, amount=self.grid_thickness, dir=(0, 0, 1))
-        solid = bd.Solid(None) 
-        for point in self.create_grid_points(rows, columns):
-            solid += hexmount.translate(point)
-        return solid
-
-
     # Grid mounts are used to secure the hexagon grid to a surface. Each mount takes up 
     # a single hexagon and has a hole in the center for a screw. The mount goes through
     # the hexagon and extends outwards by half of the side length of the hexagon to allow
