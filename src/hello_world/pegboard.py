@@ -2,7 +2,6 @@ from typing import cast
 import build123d as bd
 import hello_world.util.skadis_hook as skadis
 
-
 def skadis_bin(
     bin_width: int, bin_height_back: int, bin_height_front: int, bin_depth: int, bin_wall_thickness: int
 ) -> bd.Shape:
@@ -35,8 +34,9 @@ def skadis_bin(
     # Make some hooks
     hook_face = bin.faces().sort_by(bd.Axis.Y).last
     hook_plane = bd.Plane(hook_face)
-    hook = bd.Rot(Y=90) * bd.Rot(Z=90) * skadis.skadis_hook()
-    hook_locs = cast(skadis.SkadisLocations, hook_plane * skadis.SkadisLocations(2, 2, spacing=80))
+    hook = skadis.Hook().rotate(bd.Axis.Y, 90)
+    hook_locs = cast(skadis.HookLocations, hook_plane * skadis.HookLocations(2, 2, spacing=40))
     hooks = bd.Compound([loc * hook for loc in hook_locs])
     bin = bd.Compound.make_compound((bin, hooks))
     return bin
+

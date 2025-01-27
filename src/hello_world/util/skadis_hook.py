@@ -9,27 +9,21 @@ COLUMN_SPACING = 40
 ROW_SPACING = 40
 END_CAP_LEN = 2
 
+class Hook(bd.BasePartObject):
+    def __init__(self):
+        protrusion = BOARD_THICKNESS + TOLERANCE + HOOK_SQ_LEN / 2
+        drop = 9 - END_CAP_LEN
+        # Path construction
+        path = bd.Curve([bd.Line((0, 0), (0, protrusion)), bd.Line((0, protrusion), (drop, protrusion))])
+        profile = cast(bd.Sketch, bd.Plane.XZ * bd.RectangleRounded(HOOK_SQ_LEN, HOOK_SQ_LEN, 0.4))
+        hook_profile: bd.Part = cast(bd.Part, bd.sweep(profile, path=path, transition=bd.Transition.ROUND))
+        end_face = hook_profile.faces().sort_by(bd.Axis.X).last
+        end_plane = bd.Plane(end_face).offset(END_CAP_LEN)
+        end_cap_sk = end_plane * bd.Pos(0, -HOOK_SQ_LEN / 4, 0) * bd.RectangleRounded(HOOK_SQ_LEN / 4, HOOK_SQ_LEN / 4, 0.2)
+        obj = (hook_profile + bd.loft([bd.Sketch(end_cap_sk), end_face])).rotate(bd.Axis.X, -90).rotate(bd.Axis.Y, 90)
+        super().__init__(obj)
 
-def skadis_hook() -> bd.Part:
-    """Create an Ikea Skadis hook with proper type annotations."""
-    protrusion = BOARD_THICKNESS + TOLERANCE + HOOK_SQ_LEN / 2
-    drop = 9 - END_CAP_LEN
-
-    # Path construction
-    path = bd.Curve([bd.Line((0, 0), (0, protrusion)), bd.Line((0, protrusion), (drop, protrusion))])
-
-    # Profile and sweep
-    profile = cast(bd.Sketch, bd.Plane.XZ * bd.RectangleRounded(HOOK_SQ_LEN, HOOK_SQ_LEN, 0.4))
-    hook_profile: bd.Part = cast(bd.Part, bd.sweep(profile, path=path, transition=bd.Transition.ROUND))
-
-    # End cap construction
-    end_face = hook_profile.faces().sort_by(bd.Axis.X).last
-    end_plane = bd.Plane(end_face).offset(END_CAP_LEN)
-    end_cap_sk = end_plane * bd.Pos(0, -HOOK_SQ_LEN / 4, 0) * bd.RectangleRounded(HOOK_SQ_LEN / 4, HOOK_SQ_LEN / 4, 0.2)
-
-    return (hook_profile + bd.loft([bd.Sketch(end_cap_sk), end_face])).rotate(bd.Axis.Y, 90)
-
-class SkadisLocations(bd.LocationList):
+class HookLocations(bd.LocationList):
     """Location Context: Hook placement matching the Ikea Skadis pattern
 
     Creates a context of grid location for a Part or Sketch
