@@ -1,5 +1,5 @@
 # Module for adding skadis mounting hooks to any face
-from typing import List, Union, cast
+from typing import Union, cast
 import build123d as bd
 
 HOOK_SQ_LEN = 4.8
@@ -21,6 +21,7 @@ class Hook(bd.BasePartObject):
         end_plane = bd.Plane(end_face).offset(END_CAP_LEN)
         end_cap_sk = end_plane * bd.Pos(0, -HOOK_SQ_LEN / 4, 0) * bd.RectangleRounded(HOOK_SQ_LEN / 4, HOOK_SQ_LEN / 4, 0.2)
         obj = (hook_profile + bd.loft([bd.Sketch(end_cap_sk), end_face])).rotate(bd.Axis.X, -90).rotate(bd.Axis.Y, 90)
+        obj.label = "SkadisHook"
         super().__init__(obj)
 
 class HookLocations(bd.LocationList):
