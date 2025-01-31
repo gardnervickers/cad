@@ -15,14 +15,22 @@ class Hook(bd.BasePartObject):
         drop = 9 - END_CAP_LEN
         # Path construction
         path = bd.Curve([bd.Line((0, 0), (0, protrusion)), bd.Line((0, protrusion), (drop, protrusion))])
-        profile = cast(bd.Sketch, bd.Plane.XZ * bd.RectangleRounded(HOOK_SQ_LEN, HOOK_SQ_LEN, 0.4))
+        profile = None
+        profile = cast(bd.Sketch, bd.Plane.XZ * bd.Rectangle(HOOK_SQ_LEN, HOOK_SQ_LEN))
         hook_profile: bd.Part = cast(bd.Part, bd.sweep(profile, path=path, transition=bd.Transition.ROUND))
         end_face = hook_profile.faces().sort_by(bd.Axis.X).last
         end_plane = bd.Plane(end_face).offset(END_CAP_LEN)
-        end_cap_sk = end_plane * bd.Pos(0, -HOOK_SQ_LEN / 4, 0) * bd.RectangleRounded(HOOK_SQ_LEN / 4, HOOK_SQ_LEN / 4, 0.2)
+        end_cap_sk = end_plane * bd.Pos(0, -HOOK_SQ_LEN / 4, 0) * bd.Rectangle(HOOK_SQ_LEN / 4, HOOK_SQ_LEN / 4)
         obj = (hook_profile + bd.loft([bd.Sketch(end_cap_sk), end_face])).rotate(bd.Axis.X, -90).rotate(bd.Axis.Y, 90)
         obj.label = "SkadisHook"
         super().__init__(obj)
+
+    @staticmethod
+    def width() -> float:
+        return HOOK_SQ_LEN
+
+    def rounded(self):
+        return bd.fillet(self.edges().sort_by(bd.Axis.Z)[1:].filter_by_position(bd.Axis.X, -100, -1), 0.4)
 
 class HookLocations(bd.LocationList):
     """Location Context: Hook placement matching the Ikea Skadis pattern
