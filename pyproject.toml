@@ -5,10 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "build123d>=0.8.0",
+    "build123d",
+    "ocp-vscode>=2.6.1",
     "urllib3>=2.2.3",
-    "yacv-server>=0.9.3",
-    "cadquery-ocp==7.7.2",
+    "vtk==9.3.1",
 ]
 
 [build-system]
@@ -19,4 +19,10 @@ build-backend = "hatchling.build"
 dev = [
     "ruff>=0.6.7",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.uv.sources]
+build123d = { git = "https://github.com/gumyr/build123d" }
 

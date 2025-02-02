@@ -1,10 +1,9 @@
-# Open up http://127.0.0.1:32323/ for an interactive 3d model viewer
-import build123d as bd
-import yacv_server as yacv
-import hello_world.util.skadis_hook as skadis
+# Starts up ocp_vscode in standalone mode
+import ocp_vscode.__main__
 
-yacv.yacv.startup_complete.wait()
+def start_ocp_vscode():
+    ocp_vscode.__main__.main()
 
-yacv.yacv.shown_object_names()
-yacv.clear()
-yacv.show()
+
+if __name__ == "__main__":
+    start_ocp_vscode()

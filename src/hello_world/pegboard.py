@@ -2,14 +2,13 @@ from math import floor
 from typing import cast
 import build123d as bd
 import hello_world.util.skadis_hook as skadis
-from yacv_server import show
 
 
 def skadis_bin(
     bin_width: int, bin_height_back: int, bin_height_front: int, bin_depth: int, bin_wall_thickness: int
 ) -> bd.Shape:
     """
-    Generates a bin for the Skadis pegboard system. This is a square bin. 
+    Generates a bin for the Skadis pegboard system. This is a square bin.
     :param bin_width: The width of the bin.
     :param bin_height_back: The height of the back of the bin.
     :param bin_height_front: The height of the front of the bin. The front can be made to be lower than the back to make it easier to see the contents.
@@ -37,12 +36,11 @@ def skadis_bin(
     # Make some hooks
     hook_face = bin.faces().sort_by(bd.Axis.Y).last
     hook_plane = bd.Plane(hook_face)
-    hook = skadis.Hook().rotate(bd.Axis.Y, 90)
+    hook = skadis.Hook()
     hook_locs = cast(skadis.HookLocations, hook_plane * skadis.HookLocations(2, 2, spacing=40))
     hooks = bd.Compound([loc * hook for loc in hook_locs])
     bin = bd.Compound.make_compound((bin, hooks))
     return bin
-
 
 
 def grid_for_face(face: bd.Face, shape: bd.Sketch, gap: float) -> bd.Sketch:
@@ -81,8 +79,8 @@ def grid_for_face(face: bd.Face, shape: bd.Sketch, gap: float) -> bd.Sketch:
     if shape_width <= 0 or shape_height <= 0:
         raise ValueError("Shape must have non-zero width and height")
     # Calculate the number of rows and columns needed
-    cols = int(floor(face_width // shape_width)) + 1
-    rows = int(floor(face_height // shape_height)) + 1
+    cols = abs(int(floor(face_width // shape_width)) + 1)
+    rows = abs(int(floor(face_height // shape_height)) + 1)
 
     # Create the grid in the face's local coordinate system
     grid = bd.GridLocations(
@@ -102,84 +100,47 @@ def grid_for_face(face: bd.Face, shape: bd.Sketch, gap: float) -> bd.Sketch:
     # Transform the result back to the global coordinate system
     return cast(bd.Sketch, face_plane * result)
 
-def rounded_bin(face_pattern: bd.Sketch = bd.RegularPolygon(radius=6, side_count=6)) -> bd.Solid:
-    bin_width = 150 
-    circle_radius = 25 
-    bin_height = 110 
-    bin_thickness = 2
-    gap = 2  # gap between patterns 
+
+def rounded_bin(bin_width: float, bin_height: float, end_circle_radius: float, bin_thickness: float = 2, face_pattern: bd.Sketch = bd.RegularPolygon(radius=6, side_count=6)) -> bd.Solid:
+    circle_radius = end_circle_radius 
+    gap = 2  # gap between patterns
 
     bin_base_prof = bd.RectangleRounded(
         width=bin_width,
         height=circle_radius * 2 + 0.1,  # Height of the profile
         radius=circle_radius,
-        align=(bd.Align.CENTER, bd.Align.CENTER)  # Center the rectangle
+        align=(bd.Align.CENTER, bd.Align.CENTER),  # Center the rectangle
     )
-    bin = bd.extrude(bin_base_prof, bin_height, dir=(0,0,1))
+    bin = bd.extrude(bin_base_prof, bin_height, dir=(0, 0, 1))
     bin = bin.hollow(faces=[bin.faces().sort_by(bd.Axis.Z).last], thickness=bin_thickness)
     bin = bin.solid()
 
     bin_f: bd.Face = bin.faces().sort_by(bd.Axis.Y).first
-    # Shrink the face by 2mm to ensure the pattern does not overlap the edges 
+    # Shrink the face by 2mm to ensure the pattern does not overlap the edges
     shrunk_f = bd.offset(bin_f, -8).face()
     # Generate a face for cutting
     cut_face = grid_for_face(shrunk_f, face_pattern, gap)
-    cut_ex = bd.extrude(cut_face, bin_thickness + 0.01, dir=(0,1,0), mode=bd.Mode.ADD)
+    cut_ex = bd.extrude(cut_face, bin_thickness + 0.01, dir=(0, 1, 0), mode=bd.Mode.ADD)
     cut_ex = cut_ex.translate((0, -0.01, 0))
     bin -= cut_ex
 
     # Next we will put some hooks on the back.
     hook = skadis.Hook()
-    hook = hook.rotate(bd.Axis.Y, 90).rotate(bd.Axis.Z, -90)
+    hook = hook.rotate(bd.Axis.Z, 270)
     hook_plane = bd.Plane(bin.faces().sort_by(bd.Axis.Y).last)
     hook_locs = cast(skadis.HookLocations, hook_plane * skadis.HookLocations(3, 1))
     hooks = bd.Compound([loc * hook for loc in hook_locs])
     bin += hooks
-    return bin 
-
-def shelf_not_working():
-    # Alright now lets make a shelf generator. My build volume is 256mm x 256mm x 256mm, so
-    # the shelf needs to be smaller than that. Additionally if the skadis hook pattern is 
-    # offset every 40mm, then the shelf needs to be a multiple of 40mm. 
-    #max_width = floor(256 / 40) * 40
-
-    # The shelf has two parts, the flat piece that items sit on and the triangular supports 
-    # which have the skadis hooks on them. 
-
-    hook = skadis.Hook()
-
-    # the depth of the support. This is going to be the length of the longest side of the triangle.
-    # It meets the back piece of the support at a right angle. 
-    support_depth = 100
-    # The height of the support, which attaches to the pegboard. This needs to hold at least 2 hooks,
-    # so the min height is going to be 40mm + the hook size. 
-    support_height = 40
-    support_width = hook.width() 
-
-    # Make support profile
-    support_sk: bd.Sketch = bd.Sketch(None)
-    support_prof = bd.Triangle(b = support_depth, a = support_height, B=90)
-    support_sk += support_prof
-    support_inner_prof = bd.offset(support_prof, -support_width)
-    support_inner_prof = bd.fillet(support_inner_prof.vertices(), 2)
-    support_sk -= support_inner_prof
-    support_sk = cast(bd.Sketch, bd.fillet([support_sk.vertices().sort_by(bd.Axis.Y).last], 2))
-
-    # Extrude the support. 
-    support_body = bd.extrude(support_sk, support_width)
-    support_hook_face = support_body.faces().sort_by(bd.Axis.Y).first
-    return support_hook_face
-    #support_body += bd.Plane(support_hook_face) * bd.Pos(((support_height * -0.5) + (support_width * 0.5), 0, 0)) * skadis.Hook().rotate(bd.Axis.Y, 90).rotate(bd.Axis.Z, 180)
-    # Attach the hooks.
+    return bin
 
 
-def parts_bin(hook_count: int, base_depth: float, base_height: float = 20, thickness = 2, vtx_shift: float = 0):
+def parts_bin(hook_count: int, base_depth: float, base_height: float = 20, thickness=2, vtx_shift: float = 0):
     """
-    Create a small parts bin which can be placed side-by-side with other bins. 
+    Create a small parts bin which can be placed side-by-side with other bins.
     :param hook_count: The number of hooks on the front of the bin. This determines the width of the bin,
     :param base_depth: The depth of the bin, from the front to the back.
     :param base_height: The height of the bin, from the top to the bottom.
-    :param thickness: The thickness of the bin walls. 
+    :param thickness: The thickness of the bin walls.
     :param vtx_shift: The amount to shift the vertex of the triangle. This can produce angled front lips which
                       is aesthetically pleasing.
     """
@@ -193,16 +154,11 @@ def parts_bin(hook_count: int, base_depth: float, base_height: float = 20, thick
     bin_width: float = (40 * hook_count) - (2 * thickness) - gap
     base_sketch = bd.Sketch(None)
     top_line = bd.Line((0, 0), (0, base_depth))
-    vtx = bd.Vector((-base_height, vtx_shift, 0))  
+    vtx = bd.Vector((-base_height, vtx_shift, 0))
     front_line = bd.Line((0, 0), vtx)
     back_line1 = bd.Line(vtx, (vtx.X, base_depth))
     back_line2 = bd.Line((vtx.X, base_depth), (0, base_depth))
-    base_curve = bd.Curve([
-        top_line,
-        front_line,
-        back_line1,
-        back_line2
-    ])
+    base_curve = bd.Curve([top_line, front_line, back_line1, back_line2])
 
     base_sketch += bd.make_face(base_curve.edges())
     base_ex = bd.extrude(base_sketch, bin_width)
@@ -213,28 +169,60 @@ def parts_bin(hook_count: int, base_depth: float, base_height: float = 20, thick
 
     hooks = bd.Part(None)
     hook_pattern = skadis.HookLocations(hook_count, 1)
-    hook = skadis.Hook().rounded()
-    hook = bd.Rot(Y = 90) * bd.Rot(X = 90) * hook
+    hook = skadis.Hook()
+    hook = bd.Rot(Z=270) * hook
     for loc in hook_pattern:
         hooks += loc * hook
 
     back_face = base.faces().sort_by(bd.Axis.Y).last
     back_face_len = back_face.edges().sort_by(bd.SortBy.LENGTH).first.length
-    # Shift the hooks so they are at the top of the face. If the len is 10, 
+    # Shift the hooks so they are at the top of the face. If the len is 10,
     # and hook width is 3, we know the hooks start at 5, so we need to shift up
     # by 2. The formula is thus (back_face_len / 2) - (hook width / 2)
-    hook_shift = (back_face_len / 2) - (skadis.Hook.width() / 2) 
+    hook_shift = (back_face_len / 2) - (skadis.Hook.width() / 2)
     hooks = bd.Plane(back_face) * bd.Rot(Z=90) * bd.Pos(Y=-hook_shift) * hooks
     bin = bd.Compound([base, hooks])
-    return bin 
+    return bin
 
-#bins = []
-#for i in range(1, 4):
-#    bin = parts_bin(i, 80, vtx_shift=10)
-#    bins.append(bd.Rot(Y=270) * bin)
-#    bd.export_step(bin, f"parts_bin_{i}.step")
-#
-#bins = bd.pack(bins, padding=4)
-#show(bins)
 
+def make_shelf(width_in_slots: int, depth: float, thickness: float = 2) -> bd.Part:
+    bracket_x = 20  # height
+    bracket_y = depth
+    bracket_z = (
+        skadis.Hook.width() + 0.01
+    )  # width, add 1 so that this is slightly wider than the hook, which makes seperating out the face easier.
+    width_between_brackets = 40 * width_in_slots
+
+    bracket_profile = bd.Sketch(None)
+    bracket_profile += bd.Triangle(a=bracket_x, c=bracket_y, B=90)
+    bracket_profile_inner = bd.offset(bracket_profile, amount=-thickness)
+    bracket_profile -= bracket_profile_inner
+    start_bracket = bd.extrude(bracket_profile, amount=bracket_z)
+    start_bracket = bd.fillet(start_bracket.edges().filter_by(lambda e: e.is_interior), 1)
+    start_bracket = bd.fillet(start_bracket.edges().sort_by(bd.Axis.Y).last, 1)
+    bracket_hook_face = start_bracket.faces().sort_by(bd.Axis.Y).first
+    # calculate the shift for the hook so that it's flush with the top of the shelf.
+    # The hook is centered, so we need to shift it by half the width of the hook
+    hook_shift = bracket_x / 2 - (skadis.Hook.width() / 2)
+    start_bracket += bd.Plane(bracket_hook_face) * bd.Pos(X=-hook_shift) * bd.Rot(Z=180) * skadis.Hook()
+    end_bracket = start_bracket.moved(bd.Location((0, 0, width_between_brackets)))
+
+    shelf_start = start_bracket.faces().sort_by(bd.Axis.Z).last
+    shelf = bd.extrude(shelf_start, until=bd.Until.NEXT, target=end_bracket)
+    split_plane = bd.Plane(shelf.faces().filter_by(lambda f: f.is_planar_face).sort_by(bd.Axis.X)[1])
+    shelf = shelf.split(split_plane, keep=bd.Keep.BOTTOM)
+    shelf = bd.Compound([start_bracket, end_bracket, shelf])
+    bottom_edges = shelf.edges().sort_by(lambda e: e.length).sort_by(bd.Axis.X)[-4:]
+    shelf = shelf.fillet(2, bottom_edges)
+    return shelf
+
+
+def shelf_with_holes(width_in_slots: int, depth: float, thickness: float = 2) -> bd.Part:
+    shelf = make_shelf(width_in_slots, depth, thickness)
+    shelf_face = shelf.faces().sort_by(lambda f: f.area).last
+    shelf_face = bd.offset(shelf_face, -2).face()
+    shelf_hole_grid = grid_for_face(shelf_face, bd.Rectangle(4, 4), 0.2)
+    shelf_hole_grid = bd.extrude(shelf_hole_grid, 4, dir=(1, 0, 0))
+    shelf -= shelf_hole_grid
+    return shelf
 
