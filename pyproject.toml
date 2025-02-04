@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "bd-warehouse",
     "build123d",
     "ocp-vscode>=2.6.1",
     "urllib3>=2.2.3",
@@ -25,4 +26,5 @@ allow-direct-references = true
 
 [tool.uv.sources]
 build123d = { git = "https://github.com/gumyr/build123d" }
+bd-warehouse = { git = "https://github.com/gumyr/bd_warehouse" }
 

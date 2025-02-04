@@ -32,6 +32,15 @@ wheels = [
 ]
 
 [[package]]
+name = "bd-warehouse"
+version = "0.1.dev147+g48c507b"
+source = { git = "https://github.com/gumyr/bd_warehouse#48c507baac94231e2eb2c4032848719660f964dc" }
+dependencies = [
+    { name = "build123d" },
+    { name = "typing-extensions" },
+]
+
+[[package]]
 name = "blinker"
 version = "1.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -378,6 +387,7 @@ name = "hello-world"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "bd-warehouse" },
     { name = "build123d" },
     { name = "ocp-vscode" },
     { name = "urllib3" },
@@ -391,6 +401,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "bd-warehouse", git = "https://github.com/gumyr/bd_warehouse" },
     { name = "build123d", git = "https://github.com/gumyr/build123d" },
     { name = "ocp-vscode", specifier = ">=2.6.1" },
     { name = "urllib3", specifier = ">=2.2.3" },
